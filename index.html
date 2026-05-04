@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Shopping Tracker</title>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: linear-gradient(to right, #667eea, #764ba2);
+            text-align: center;
+            color: white;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .card {
+            background: white;
+            color: black;
+            padding: 20px;
+            border-radius: 15px;
+            width: 280px;
+        }
+
+        input {
+            width: 90%;
+            padding: 8px;
+            margin: 10px;
+        }
+
+        button {
+            padding: 8px 12px;
+            background: blue;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        li {
+            list-style: none;
+            background: #eee;
+            margin: 5px;
+            padding: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Shopping Tracker</h1>
+
+<div class="container">
+
+    <div class="card">
+        <h3>Add Item</h3>
+        <input id="itemName" placeholder="Item name">
+        <input id="itemPrice" type="number" placeholder="Price">
+        <button id="addItem">Add</button>
+    </div>
+
+    <div class="card">
+        <h3>Budget</h3>
+        <input id="budget" type="number" placeholder="Enter budget">
+        <p>Total: ₹<span id="total">0</span></p>
+        <p>Remaining: ₹<span id="remaining">0</span></p>
+    </div>
+
+    <div class="card">
+        <h3>Items</h3>
+        <ul id="itemList"></ul>
+    </div>
+
+</div>
+
+<script>
+let warned = false;
+
+$(document).ready(function() {
+
+    loadItems();
+
+    $("#addItem").click(function() {
+        let name = $("#itemName").val();
+        let price = parseFloat($("#itemPrice").val());
+
+        if (!name || isNaN(price)) {
+            alert("Enter valid details");
+            return;
+        }
+
+        let item = { name, price };
+
+        $.ajax({
+            url: "http://localhost:3000/add-item",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(item),
+            success: loadItems,
+            error: () => alert("Failed to add item")
+        });
+
+        $("#itemName").val("");
+        $("#itemPrice").val("");
+    });
+
+    $("#budget").on("input", updateRemaining);
+});
+
+function loadItems() {
+    $.get("http://localhost:3000/items", function(data) {
+
+        let total = 0;
+        $("#itemList").empty();
+
+        data.forEach((item, index) => {
+            if (!item) return;
+
+            total += item.price;
+
+            let li = $("<li></li>").text(item.name + " - ₹" + item.price);
+
+            let btn = $("<button>❌</button>").click(function() {
+                deleteItem(index);
+            });
+
+            li.append(btn);
+            $("#itemList").append(li);
+        });
+
+        $("#total").text(total);
+        updateRemaining();
+    });
+}
+
+function deleteItem(index) {
+    $.ajax({
+        url: "http://localhost:3000/delete-item/" + index,
+        type: "DELETE",
+        success: loadItems,
+        error: () => alert("Delete failed")
+    });
+}
+
+function updateRemaining() {
+    let budget = parseFloat($("#budget").val());
+    let total = parseFloat($("#total").text()) || 0;
+
+    if (isNaN(budget)) {
+        $("#remaining").text(0);
+        return;
+    }
+
+    let remaining = budget - total;
+    $("#remaining").text(remaining);
+
+    if (total >= budget && budget > 0 && !warned) {
+        alert("⚠ Budget exceeded!");
+        warned = true;
+    }
+
+    if (total < budget) warned = false;
+}
+</script>
+
+</body>
+</html>
