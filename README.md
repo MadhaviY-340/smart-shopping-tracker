@@ -3,7 +3,8 @@ SmartShopping is a simple web application built using Node.js and Express.js tha
 
 
 ---
-## live 
+## Live Demo
+https://madhaviy-340.github.io/smart-shopping-tracker/
 
 ##  Features
 
